@@ -1,0 +1,24 @@
+# MAF 源码（Microsoft Agent Framework）
+agent-framework/
+
+# .NET 编译产物与本地配置
+**/bin/
+**/obj/
+.env
+.env.*
+!.env.example
+*.user
+artifacts/
+
+# 编辑器缓存、运行日志与评测产物
+.vs/
+.idea/
+.vscode/*
+!.vscode/settings.json
+*.log
+__pycache__/
+*.pyc
+TestResults/
+evals/results/
+evals/runs/
+.DS_Store

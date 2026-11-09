@@ -1,0 +1,35 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build-and-validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: 拉取代码
+        uses: actions/checkout@v5
+
+      - name: 安装 .NET SDK
+        uses: actions/setup-dotnet@v5
+        with:
+          global-json-file: global.json
+          cache: true
+          cache-dependency-path: apps/FirstAgent/packages.lock.json
+
+      - name: 按锁文件还原依赖
+        run: dotnet restore apps/apps.slnx --locked-mode
+
+      - name: 编译
+        run: dotnet build apps/apps.slnx --configuration Release --no-restore
+
+      - name: 检查学习资料和虚构数据
+        run: python3 scripts/validate-learning.py

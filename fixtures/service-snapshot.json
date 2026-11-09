@@ -1,0 +1,26 @@
+{
+  "fixtureVersion": 1,
+  "synthetic": true,
+  "environment": "learning",
+  "observedAt": "2026-11-06T06:00:00Z",
+  "services": [
+    {
+      "serviceId": "order-api",
+      "status": "degraded",
+      "evidenceId": "snapshot-order-001",
+      "metrics": { "p95LatencyMs": 1400, "errorRatePercent": 2.5 },
+      "latestDeployment": {
+        "version": "2.4.0",
+        "deployedAt": "2026-11-06T05:40:00Z",
+        "summary": "调整订单查询逻辑；具体因果关系尚未验证"
+      }
+    },
+    {
+      "serviceId": "inventory-api",
+      "status": "healthy",
+      "evidenceId": "snapshot-inventory-001",
+      "metrics": { "p95LatencyMs": 90, "errorRatePercent": 0.1 },
+      "latestDeployment": null
+    }
+  ]
+}
