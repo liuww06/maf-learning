@@ -12,7 +12,7 @@
 2. 阅读 [主线应用设计](docs/project-brief.md)，理解要解决的具体问题。
 3. 完成 [第 0 课：环境与 Agent 执行模型](lessons/00-baseline.md)。本课不需要模型 API。
 4. 根据 [第 1 课任务单](lessons/01-first-agent.md) 开始第一个 MAF 应用。
-5. [第 2 课：注册函数工具](lessons/02-function-tools.md) 已完成两个基本场景的第二轮验证，当前进行 [工具执行预算](lessons/02-tool-budget.md)。
+5. [第 2 课：注册函数工具](lessons/02-function-tools.md) 已完成两个基本场景的第二轮验证；[工具执行预算](lessons/02-tool-budget.md) 已实现并通过四项确定性检查，下一步学习模型轮数与任务终止。
 
 ## 克隆与运行
 
@@ -23,6 +23,7 @@ git clone https://github.com/liuww06/maf-learning.git
 cd maf-learning
 dotnet restore apps/apps.slnx --locked-mode
 dotnet build apps/apps.slnx --configuration Release --no-restore
+dotnet run --project apps/FirstAgent --configuration Release --no-build --no-restore -- budget-check
 python3 scripts/validate-learning.py
 ```
 
@@ -38,7 +39,9 @@ dotnet run --project apps/FirstAgent --configuration Release --no-build --no-res
 
 主分支使用 `main`。初始化后通过功能分支和 Pull Request 合并变更，要求 `build-and-validate` 检查通过；对应 GitHub ruleset 要求 PR、分支与主线保持最新，并禁止删除或强制推送主分支。个人学习仓库不强制额外审批人。
 
-CI 按锁文件还原依赖、执行 Release 编译，并检查 JSON、仓库内文档链接与评测资料。当前没有自动化测试项目，CI 不调用模型或本机网关；编译和静态检查不能替代模型行为评测。调用预算练习仍待实现。
+CI 按锁文件还原依赖、执行 Release 编译、运行 `budget-check`，并检查 JSON、仓库内文档链接与评测资料。预算检查覆盖重复 ID、更换 ID、失败扣额和并发准入，失败返回非零退出码。当前没有独立测试项目，CI 不调用模型或本机网关；确定性检查不能替代模型行为评测。工具执行预算已实现，模型请求轮数限制尚未实现。
+
+CI 在向 `main` 推送、向 `main` 发起 PR 或手动触发时运行；单独推送功能分支不会自动触发。
 
 ## 可选的上游源码阅读
 

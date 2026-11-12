@@ -27,6 +27,19 @@ dotnet run --project apps/FirstAgent --no-build --no-restore -- stream
 
 `packages.lock.json` 锁定本次解析的依赖。助手本次验证使用 `/tmp/maf-nuget` 作为包缓存；你在自己的终端执行上述还原命令时可以使用默认缓存。当前二进制可直接运行，不需要再次还原依赖。
 
+## 不调用模型的预算检查
+
+工具入口在读取快照前调用 [ToolCallBudget.TryConsume](ToolCallBudget.cs)。每次 CLI Agent 运行最多准许两次执行尝试；业务失败也扣额度，超限返回 `TOOL_BUDGET_EXCEEDED`。同一运行共享预算，新的运行创建新预算。`Used` 仅供近似观测，准入结果以 `TryConsume` 返回值为准。
+
+```bash
+dotnet build apps/apps.slnx --configuration Release --no-restore
+dotnet run --project apps/FirstAgent --configuration Release --no-build --no-restore -- budget-check
+```
+
+该模式不创建模型客户端，也不需要 Magpie：前三项通过 AIFunction 包装调用工具，检查重复 ID、更换 ID 和失败扣额；第四项通过 `Parallel.For` 对同一个预算执行 20 次准入尝试，检查准许数与最终 Used 均为 2。四项全部通过退出 0，否则非 0；CI 也执行此入口。
+
+这验证了当前工具预算行为，不代表验证了 MAF 的并行调度或真实模型行为。工具执行预算也不限制模型请求轮数；模型仍可能继续请求并收到拒绝。模型轮数与任务终止属于下一小节。
+
 ## 配置
 
 | 环境变量 | 默认值 | 用途 |
@@ -82,6 +95,14 @@ MAGPIE_BASE_URL='not-a-url' dotnet apps/FirstAgent/bin/Debug/net10.0/FirstAgent.
 
 2026-11-09：本人提交指令修改与实际输出，源码默认模型已改为 `zcode/GLM-5.3-Flash`。助手核对代码、移除直接打印凭据和完整用户输入的调试行，重新编译通过；本轮未再次调用模型，也未确认用户这次运行的有效模型和模式。详见 [练习复盘](../../progress/2026-11-09-l01.md)。
 
-同日后续：本人接入函数工具，并提交 GLM-5.3-Flash 流式查询 order-api 与 billing-api 的两轮日志。首轮未知服务回答误将 errorCode 称为证据编号；修改指令并补齐方法描述后，第二轮两个样本满足当前要求。详见 [L02 验证记录](../../progress/2026-11-09-l02.md)。下一项 [工具执行预算](../../lessons/02-tool-budget.md) 尚待本人实现，当前应用尚不支持 budget-check 模式。
+同日后续：本人接入函数工具，并提交 GLM-5.3-Flash 流式查询 order-api 与 billing-api 的两轮日志。首轮未知服务回答误将 errorCode 称为证据编号；修改指令并补齐方法描述后，第二轮两个样本满足当时要求。详见 [L02 验证记录](../../progress/2026-11-09-l02.md)。当时下一项 [工具执行预算](../../lessons/02-tool-budget.md) 尚待本人实现，应用尚不支持 budget-check 模式。
+
+2026-11-10：本人已将执行预算接入 ServiceTools，当前每次 CLI 运行最多准许两次工具执行尝试。助手的独立 AIFunction 包装调用验证了第三次拒绝、失败消耗额度和并发上限；超限结果与日志仍需按任务单补齐，budget-check 尚未实现，也未验证模型轮数上限。详见 [预算审查记录](../../progress/2026-11-10-tool-budget.md)。
+
+同日后续：超限结果字段已修正，新增 budget-check 模式，直接调用同一工具实例三次且不创建模型客户端。当前入口丢弃返回值，调用不抛异常就退出 0，只能作为演示；结果断言、AIFunction 包装调用、请求日志位置和其他场景仍待完善。
+
+2026-11-11：budget-check 已通过 AIFunction 包装调用并断言重复查询结果，正常实现输出 PASS、退出 0；在临时副本注入第三次错误放行后，当前检查器输出 FAIL、退出 1。日志顺序及 3/2/1 计数符合约定。其他预算场景尚待纳入该入口，详见 [最新验收记录](../../progress/2026-11-11-tool-budget.md)。
+
+2026-11-12：本人完成三组参数化检查，并补回 serviceId/maxToolExecutions 断言。助手在收尾时补齐并发准入检查、四项结果汇总和 CI 接入；Release 编译通过，四项均 PASS、退出 0。本次未调用模型或 Magpie。经讨论，取消当前阶段重复的新旧对象隔离用例；未来多任务宿主的隔离另行验证。助手补齐的检查不记为本人独立掌握，详见 [预算阶段验收与收尾](../../progress/2026-11-12-tool-budget.md)。
 
 [OpenAI 流式文档](https://developers.openai.com/api/docs/guides/streaming-responses) 说明 HTTP Responses 流式使用 SSE。本课验证的是客户端到 Magpie 这段接口；没有检查 Magpie 内部采用何种上游传输和重试策略。
