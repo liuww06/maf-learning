@@ -1,6 +1,7 @@
 using System.ClientModel;
 using System.ClientModel.Primitives;
 using System.Diagnostics;
+using System.Text.Json;
 using Microsoft.Agents.AI;
 using Microsoft.Extensions.AI;
 using OpenAI;
@@ -18,9 +19,24 @@ const string Instructions = "你是研发学习助手。可以提供代码审查
 const string DefaultPrompt = "用两句话说明你能如何帮助研发人员排查问题，以及你现在有哪些信息限制。";
 
 string mode = args.FirstOrDefault() ?? "stream";
+
+if (mode == "budget-check")
+{
+    List<bool> results = new()
+    {
+        await BudgetChecking("重复 ID", ["order-api", "order-api", "order-api"], [null, null, "TOOL_BUDGET_EXCEEDED"]),
+        await BudgetChecking("更换 ID", ["order-api", "inventory-api", "order-api"], [null, null, "TOOL_BUDGET_EXCEEDED"]),
+        await BudgetChecking("失败也扣额度", ["billing-api", "order-api", "inventory-api"], ["UNKNOWN_SERVICE", null, "TOOL_BUDGET_EXCEEDED"]),
+        ConcurrentBudgetChecking()
+    };
+
+    Console.WriteLine($"预算检查汇总：{results.Count(passed => passed)}/{results.Count} 通过。");
+    return results.All(r => r) ? 0 : 1;
+}
+
 if (mode is not ("once" or "stream") || args.Length > 2)
 {
-    Console.Error.WriteLine("用法：dotnet run --project apps/FirstAgent -- [once|stream] [问题]");
+    Console.Error.WriteLine("用法：dotnet run --project apps/FirstAgent -- [once|stream] [问题]，或使用 budget-check。");
     return 2;
 }
 
@@ -55,6 +71,7 @@ var client = new OpenAIClient(new ApiKeyCredential(apiKey), new OpenAIClientOpti
 // 2. 将 Responses 客户端适配为 MAF Agent，并注册虚构服务快照查询工具。
 // OpenAI 2.14.0 对这些 Responses API 标记了实验性诊断，仅在此处显式接受。
 #pragma warning disable OPENAI001
+var serviceTools = new ServiceTools(new ToolCallBudget(2));
 AIAgent agent = client.GetResponsesClient().AsAIAgent(new ChatClientAgentOptions
 {
     Name = "DevLearningAssistant",
@@ -62,7 +79,7 @@ AIAgent agent = client.GetResponsesClient().AsAIAgent(new ChatClientAgentOptions
     {
         Instructions = Instructions,
         RawRepresentationFactory = _ => new CreateResponseOptions { StoredOutputEnabled = false },
-        Tools = [AIFunctionFactory.Create(ServiceTools.GetServiceHealth)]
+        Tools = [AIFunctionFactory.Create(serviceTools.GetServiceHealth)]
     }
 }, model: model);
 #pragma warning restore OPENAI001
@@ -147,3 +164,55 @@ finally
 }
 
 static string Milliseconds(TimeSpan? elapsed) => elapsed?.TotalMilliseconds.ToString("F0") ?? "未提供";
+
+static async Task<bool> BudgetChecking(string caseName, string[] serviceIds, string?[] expectedErrorCodes)
+{
+    Console.WriteLine($"预算检查用例 {caseName}：服务ID={string.Join(",", serviceIds)} 预期错误码={string.Join(",", expectedErrorCodes.Select(e => e ?? "null"))}");
+    var budget = new ToolCallBudget(2);
+    var checkingTools = new ServiceTools(budget);
+    var tool = AIFunctionFactory.Create(checkingTools.GetServiceHealth);
+    var results = new List<JsonElement>();
+    for (int i = 0; i < serviceIds.Length; i++)
+    {
+        object? raw = await tool.InvokeAsync(
+            new AIFunctionArguments { ["serviceId"] = serviceIds[i] });
+        if (raw is not JsonElement result)
+        {
+            Console.Error.WriteLine("FAIL: 工具结果类型不符合预期。");
+            return false;
+        }
+        results.Add(result);
+    }
+
+    bool passed = budget.Used == 2;
+
+    for (int i = 0; i < results.Count; i++)
+    {
+        string? expectedErrorCode = expectedErrorCodes[i];
+        var actualOk = results[i].GetProperty("ok").GetBoolean();
+        var itemPassed = (expectedErrorCode is null && actualOk)
+        || (expectedErrorCode is not null && !actualOk && results[i].GetProperty("errorCode").GetString() == expectedErrorCode);
+
+        passed &= itemPassed;
+    }
+
+    var third = results[2];
+    passed &= third.GetProperty("serviceId").GetString() == serviceIds[2]
+        && third.GetProperty("maxToolExecutions").GetInt32() == budget.Limit;
+
+    Console.WriteLine($"{(passed ? "PASS" : "FAIL")}: {caseName}");
+
+    return passed;
+}
+
+static bool ConcurrentBudgetChecking()
+{
+    var budget = new ToolCallBudget(2);
+    var outcomes = new bool[20];
+    Parallel.For(0, outcomes.Length, i => outcomes[i] = budget.TryConsume());
+
+    int admitted = outcomes.Count(success => success);
+    bool passed = admitted == 2 && budget.Used == 2;
+    Console.WriteLine($"{(passed ? "PASS" : "FAIL")}: 并发准入，准许 {admitted}/{outcomes.Length}，Used={budget.Used}");
+    return passed;
+}

@@ -31,5 +31,8 @@ jobs:
       - name: 编译
         run: dotnet build apps/apps.slnx --configuration Release --no-restore
 
+      - name: 检查工具执行预算
+        run: dotnet run --project apps/FirstAgent --configuration Release --no-build --no-restore -- budget-check
+
       - name: 检查学习资料和虚构数据
         run: python3 scripts/validate-learning.py
