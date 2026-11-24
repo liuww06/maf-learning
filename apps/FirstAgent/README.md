@@ -38,7 +38,18 @@ dotnet run --project apps/FirstAgent --configuration Release --no-build --no-res
 
 该模式不创建模型客户端，也不需要 Magpie：前三项通过 AIFunction 包装调用工具，检查重复 ID、更换 ID 和失败扣额；第四项通过 `Parallel.For` 对同一个预算执行 20 次准入尝试，检查准许数与最终 Used 均为 2。四项全部通过退出 0，否则非 0；CI 也执行此入口。
 
-这验证了当前工具预算行为，不代表验证了 MAF 的并行调度或真实模型行为。工具执行预算也不限制模型请求轮数；模型仍可能继续请求并收到拒绝。模型轮数与任务终止属于下一小节。
+这验证了当前工具预算行为，不代表验证了 MAF 的并行调度或真实模型行为。最后的 20 次准入尝试只调用 TryConsume，没有执行服务工具；整个 budget-check 在创建 Agent 之前返回，模型调用次数为 0。普通与流式 [离线循环实验](../../lessons/02-model-round-limit.md) 已由本人提交运行输出验收；宿主终止结果任务于 2026-11-24 搁置。
+
+两种循环检查无需 Magpie，在构建成功后运行：
+
+```bash
+dotnet run --project apps/FirstAgent --configuration Release --no-build --no-restore -- loop-check
+dotnet run --project apps/FirstAgent --configuration Release --no-build --no-restore -- loop-check-stream
+```
+
+当前 MaxToolRounds=2，两种入口均已得到 PASS、Calls=3、Used=2、tools=[1,1,0]、text=脚本最终说明，退出码 0。流式替身在内存中生成更新，未验证真实 HTTP 分片；两种循环检查尚未加入 CI。
+
+两个入口还支持第二参数 `early`，表示脚本收到一次工具结果就返回文字。2026-11-18 四组检查均 PASS：默认场景 Calls=3、Used=2、tools=[1,1,0]；early 场景 Calls=2、Used=1、tools=[1,1]、text=脚本正常结束；四组均通过公共 FinishReason=Stop 断言并打印 finish=stop。见 [结束原因对照记录](../../progress/2026-11-18-finish-reason.md)。
 
 ## 配置
 
@@ -104,5 +115,11 @@ MAGPIE_BASE_URL='not-a-url' dotnet apps/FirstAgent/bin/Debug/net10.0/FirstAgent.
 2026-11-11：budget-check 已通过 AIFunction 包装调用并断言重复查询结果，正常实现输出 PASS、退出 0；在临时副本注入第三次错误放行后，当前检查器输出 FAIL、退出 1。日志顺序及 3/2/1 计数符合约定。其他预算场景尚待纳入该入口，详见 [最新验收记录](../../progress/2026-11-11-tool-budget.md)。
 
 2026-11-12：本人完成三组参数化检查，并补回 serviceId/maxToolExecutions 断言。助手在收尾时补齐并发准入检查、四项结果汇总和 CI 接入；Release 编译通过，四项均 PASS、退出 0。本次未调用模型或 Magpie。经讨论，取消当前阶段重复的新旧对象隔离用例；未来多任务宿主的隔离另行验证。助手补齐的检查不记为本人独立掌握，详见 [预算阶段验收与收尾](../../progress/2026-11-12-tool-budget.md)。
+
+2026-11-13：本人通过 clientFactory 接入 FunctionInvokingChatClient，配置 MaxToolRounds=2。助手复验 Release 编译与四项 budget-check 通过，总退出码 0；此模式没有执行模型循环，loop-check 尚未实现。详见 [轮数配置验收](../../progress/2026-11-13-model-round-limit.md)。
+
+2026-11-16：本人提交普通 loop-check 在配置 3 下的预期 FAIL/退出 1、恢复配置 2 后的 PASS/退出 0，并提供 Release 构建成功输出。助手静态确认当前配置为 2，未重复执行；流式脚本仍为空序列。详见 [普通循环验收](../../progress/2026-11-16-loop-check.md)。
+
+2026-11-17：本人补齐流式脚本与 loop-check-stream，提交 Release 构建成功、普通回归和流式检查均 PASS/退出 0 的输出。助手静态核对计数与聚合方式，未重复执行。详见 [普通与流式验收](../../progress/2026-11-17-stream-loop-check.md)。
 
 [OpenAI 流式文档](https://developers.openai.com/api/docs/guides/streaming-responses) 说明 HTTP Responses 流式使用 SSE。本课验证的是客户端到 Magpie 这段接口；没有检查 Magpie 内部采用何种上游传输和重试策略。

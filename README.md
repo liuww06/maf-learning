@@ -12,7 +12,7 @@
 2. 阅读 [主线应用设计](docs/project-brief.md)，理解要解决的具体问题。
 3. 完成 [第 0 课：环境与 Agent 执行模型](lessons/00-baseline.md)。本课不需要模型 API。
 4. 根据 [第 1 课任务单](lessons/01-first-agent.md) 开始第一个 MAF 应用。
-5. [第 2 课：注册函数工具](lessons/02-function-tools.md) 已完成两个基本场景的第二轮验证；[工具执行预算](lessons/02-tool-budget.md) 已实现并通过四项确定性检查，下一步学习模型轮数与任务终止。
+5. [第 2 课：注册函数工具](lessons/02-function-tools.md) 已完成两个基本场景的第二轮验证；[工具执行预算](lessons/02-tool-budget.md) 已通过四项确定性检查。[模型调用循环上限](lessons/02-model-round-limit.md) 与 [通用请求观测包装层](lessons/02-run-observation.md) 已完成实现和阶段验证，包装位置失败实验按本人决定跳过；[宿主终止结果](lessons/02-run-outcome.md) 任务于 2026-11-24 搁置，第 2 课至此收口，见 [评审记录](progress/2026-11-24-curriculum-review.md)。
 
 ## 克隆与运行
 
@@ -39,7 +39,7 @@ dotnet run --project apps/FirstAgent --configuration Release --no-build --no-res
 
 主分支使用 `main`。初始化后通过功能分支和 Pull Request 合并变更，要求 `build-and-validate` 检查通过；对应 GitHub ruleset 要求 PR、分支与主线保持最新，并禁止删除或强制推送主分支。个人学习仓库不强制额外审批人。
 
-CI 按锁文件还原依赖、执行 Release 编译、运行 `budget-check`，并检查 JSON、仓库内文档链接与评测资料。预算检查覆盖重复 ID、更换 ID、失败扣额和并发准入，失败返回非零退出码。当前没有独立测试项目，CI 不调用模型或本机网关；确定性检查不能替代模型行为评测。工具执行预算已实现，模型请求轮数限制尚未实现。
+CI 按锁文件还原依赖、执行 Release 编译、运行 `budget-check`，并检查 JSON、仓库内文档链接与评测资料。预算检查覆盖重复 ID、更换 ID、失败扣额和并发准入，失败返回非零退出码。当前没有独立测试项目，CI 不调用模型或本机网关；确定性检查不能替代模型行为评测。`loop-check` 与 `loop-check-stream` 均已由本人手工运行验收，尚未加入 CI。
 
 CI 在向 `main` 推送、向 `main` 发起 PR 或手动触发时运行；单独推送功能分支不会自动触发。
 
@@ -59,6 +59,7 @@ git -C agent-framework switch --detach 1c3264b065ef4b2b9b3614b19394bdd49d98334f
 | 资料 | 用途 |
 | --- | --- |
 | [知识地图](knowledge/00-map.md) | 把模型基础、Agent 运行时、检索和工程治理串起来 |
+| [个人思考与知识内化](reflections/README.md) | 保存真实疑问、认识变化和工程判断，通过自测逐步内化 |
 | [源码阅读地图](source-notes/00-reading-map.md) | 带着应用问题追踪真实调用链 |
 | [学习进度](progress/tracker.md) | 区分材料已准备、代码已验证和本人已掌握 |
 | [首次学习记录](progress/2026-11-06.md) | 保存环境基线、决定和下一步 |
@@ -87,5 +88,7 @@ git -C agent-framework switch --detach 1c3264b065ef4b2b9b3614b19394bdd49d98334f
 ## 我们如何协作
 
 每课由助手提供目标、必要解释、最小任务和验收方式，你完成关键实现或修改并解释结果；需要时助手示范、排错和审查。每次结束更新学习记录和进度。若你明确要求完整实现，助手按要求完成，但“助手完成代码”与“你已掌握”分别记录。
+
+讨论中有价值的原理问题和设计质疑会自动整理到 [个人思考模块](reflections/README.md)，同主题持续完善。助手归纳的认识先标为待本人确认；后续通过独立复述、实验与迁移应用补充内化证据。首篇是 [为什么 Agent 需要工具总调用预算](reflections/001-tool-call-budget.md)。
 
 掌握的标准是：你能独立修改需求、定位一次故障、解释关键取舍，并在另一场景复用能力。阅读完文档或成功运行一次示例，只是其中的一部分。

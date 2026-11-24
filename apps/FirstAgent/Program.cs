@@ -2,6 +2,7 @@ using System.ClientModel;
 using System.ClientModel.Primitives;
 using System.Diagnostics;
 using System.Text.Json;
+using FirstAgent;
 using Microsoft.Agents.AI;
 using Microsoft.Extensions.AI;
 using OpenAI;
@@ -18,6 +19,8 @@ const string Instructions = "你是研发学习助手。可以提供代码审查
 
 const string DefaultPrompt = "用两句话说明你能如何帮助研发人员排查问题，以及你现在有哪些信息限制。";
 
+const int MaxToolRounds = 2;
+
 string mode = args.FirstOrDefault() ?? "stream";
 
 if (mode == "budget-check")
@@ -32,6 +35,61 @@ if (mode == "budget-check")
 
     Console.WriteLine($"预算检查汇总：{results.Count(passed => passed)}/{results.Count} 通过。");
     return results.All(r => r) ? 0 : 1;
+}
+
+if (mode is "loop-check" or "loop-check-stream")
+{
+    string? earlyMode = args.Length > 1 ? args[1] : null;
+    var observed = new ObservedChatClient(new ScriptedChatClient(earlyMode == "early"));
+    var budget = new ToolCallBudget(2);
+    var checkingTools = new ServiceTools(budget);
+    using var loop = new FunctionInvokingChatClient(observed)
+    {
+        MaximumIterationsPerRequest = MaxToolRounds
+    };
+    var checkingAgent = new ChatClientAgent(loop, new ChatClientAgentOptions
+    {
+        ChatOptions = new ChatOptions
+        {
+            Tools = [AIFunctionFactory.Create(checkingTools.GetServiceHealth)]
+        }
+    });
+
+    AgentResponse response;
+    if (mode == "loop-check")
+    {
+        response = await checkingAgent.RunAsync("离线循环实验");
+    }
+    else
+    {
+        List<AgentResponseUpdate> checkingUpdates = [];
+        await foreach (var update in checkingAgent.RunStreamingAsync("离线循环实验"))
+        {
+            checkingUpdates.Add(update);
+        }
+
+        response = checkingUpdates.ToAgentResponse();
+    }
+
+
+    bool passed = earlyMode == "early" ?
+        observed.Calls == 2
+        && observed.FunctionToolCounts.SequenceEqual(new[] { 1, 1 })
+        && budget.Used == 1
+        && response.Text == "脚本正常结束" :
+        observed.Calls == 3
+        && observed.FunctionToolCounts.SequenceEqual(new[] { 1, 1, 0 })
+        && budget.Used == 2
+        && response.Text == "脚本最终说明";
+
+    passed &= response.FinishReason == ChatFinishReason.Stop;
+
+    Console.WriteLine($"{(passed ? "PASS" : "FAIL")}: "
+        + $"Calls={observed.Calls}; Used={budget.Used}; "
+        + $"tools=[{string.Join(',', observed.FunctionToolCounts)}]; "
+        + $"text={response.Text}; "
+        + $"finish={response.FinishReason}");
+    return passed ? 0 : 1;
 }
 
 if (mode is not ("once" or "stream") || args.Length > 2)
@@ -81,7 +139,11 @@ AIAgent agent = client.GetResponsesClient().AsAIAgent(new ChatClientAgentOptions
         RawRepresentationFactory = _ => new CreateResponseOptions { StoredOutputEnabled = false },
         Tools = [AIFunctionFactory.Create(serviceTools.GetServiceHealth)]
     }
-}, model: model);
+}, model: model,
+    clientFactory: inner => new FunctionInvokingChatClient(inner)
+    {
+        MaximumIterationsPerRequest = MaxToolRounds
+    });
 #pragma warning restore OPENAI001
 
 using var cancellation = new CancellationTokenSource(TimeSpan.FromSeconds(timeoutSeconds));
