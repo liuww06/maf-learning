@@ -1,8 +1,8 @@
 # AI Agent 工程知识地图
 
-每个主题通过“概念 → 小实验 → MAF 对应实现 → 自研取舍 → 面试表达”学习。掌握状态见 [进度表](../progress/tracker.md)，这里列出需要形成的知识结构。
+2026-11-24 起主线是自研 Agent Harness，见 [学习路线](../docs/roadmap.md)。下表中的 Agent 执行、工具系统、上下文工程、状态与记忆、可靠性、可观测、权限各层，由 H01–H10 逐个落实：先自己写最小实现，再对照 MAF 的做法。掌握状态见 [进度表](../progress/tracker.md)。
 
-当前首讲材料：[工具调用与 Agent 执行循环](01-tool-call-loop.md)。这是教学材料，个人理解仍需练习验收。
+L00 材料：[工具调用与 Agent 执行循环](01-tool-call-loop.md)。这是教学材料，个人理解仍需练习验收。
 
 L01 复盘材料：[指令与实际能力](02-instructions-and-capabilities.md)，对应本人修改 Instructions 后的输出观察。
 

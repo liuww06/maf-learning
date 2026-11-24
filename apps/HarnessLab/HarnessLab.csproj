@@ -1,0 +1,24 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <RestorePackagesWithLockFile>true</RestorePackagesWithLockFile>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="../../framework/MiniHarness/MiniHarness.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Agents.AI.OpenAI" Version="1.27.0" />
+  </ItemGroup>
+  <ItemGroup>
+    <!-- 测试场景与预算沿用 FirstAgent 的同一份文件，不复制。 -->
+    <Compile Include="../FirstAgent/ToolCallBudget.cs" Link="Scenario/ToolCallBudget.cs" />
+    <Compile Include="../FirstAgent/ServiceTools.cs" Link="Scenario/ServiceTools.cs" />
+    <None Include="../../fixtures/service-snapshot.json"
+          Link="fixtures/service-snapshot.json"
+          CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+</Project>

@@ -1,5 +1,7 @@
 # MAF 源码阅读地图
 
+> 2026-11-24 更正：本地 `agent-framework/` 自 11-06 克隆后经过三次 pull，现为 `e2f52bc5a`；下文的基线 `1c3264b06` 是本地图编写时的提交。Harness 相关入口见 [Harness 阅读地图](01-harness-reading-map.md)。本文保留为 Agent、会话与 Workflow 的基础阅读路线。
+
 基线：`1c3264b065ef4b2b9b3614b19394bdd49d98334f`，核对日期 2026-11-06。下面是阅读顺序和已定位入口，不表示已经完成全部实现分析。源码更新后重新核对路径和行为。
 
 L01 新增应用使用 MAF 1.27.0，其依赖以 [应用锁文件](../apps/FirstAgent/packages.lock.json) 为准，例如 `Microsoft.Extensions.AI.OpenAI 10.10.1`。上游 HEAD 的集中版本声明为 10.11.0；追踪应用行为时优先查看发布包对应源码，可使用 `git -C agent-framework show dotnet-1.27.0:相对文件路径` 阅读标签内容，无需切换当前工作区。
