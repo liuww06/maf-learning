@@ -12,7 +12,7 @@
 2. 阅读 [主线应用设计](docs/project-brief.md)，理解要解决的具体问题。
 3. 完成 [第 0 课：环境与 Agent 执行模型](lessons/00-baseline.md)。本课不需要模型 API。
 4. 根据 [第 1 课任务单](lessons/01-first-agent.md) 开始第一个 MAF 应用。
-5. [第 2 课：注册函数工具](lessons/02-function-tools.md) 已完成两个基本场景的第二轮验证；[工具执行预算](lessons/02-tool-budget.md) 已通过四项确定性检查。[模型调用循环上限](lessons/02-model-round-limit.md) 与 [通用请求观测包装层](lessons/02-run-observation.md) 已完成实现和阶段验证，包装位置失败实验按本人决定跳过；下一步定义宿主终止结果。
+5. [第 2 课：注册函数工具](lessons/02-function-tools.md) 已完成两个基本场景的第二轮验证；[工具执行预算](lessons/02-tool-budget.md) 已通过四项确定性检查。[模型调用循环上限](lessons/02-model-round-limit.md) 与 [通用请求观测包装层](lessons/02-run-observation.md) 已完成实现和阶段验证，包装位置失败实验按本人决定跳过；[宿主终止结果](lessons/02-run-outcome.md) 任务于 2026-11-24 搁置，第 2 课至此收口，见 [评审记录](progress/2026-11-24-curriculum-review.md)。
 
 ## 克隆与运行
 

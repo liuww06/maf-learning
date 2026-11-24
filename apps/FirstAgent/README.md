@@ -38,7 +38,7 @@ dotnet run --project apps/FirstAgent --configuration Release --no-build --no-res
 
 该模式不创建模型客户端，也不需要 Magpie：前三项通过 AIFunction 包装调用工具，检查重复 ID、更换 ID 和失败扣额；第四项通过 `Parallel.For` 对同一个预算执行 20 次准入尝试，检查准许数与最终 Used 均为 2。四项全部通过退出 0，否则非 0；CI 也执行此入口。
 
-这验证了当前工具预算行为，不代表验证了 MAF 的并行调度或真实模型行为。最后的 20 次准入尝试只调用 TryConsume，没有执行服务工具；整个 budget-check 在创建 Agent 之前返回，模型调用次数为 0。普通与流式 [离线循环实验](../../lessons/02-model-round-limit.md) 已由本人提交运行输出验收，宿主终止状态尚待实现。
+这验证了当前工具预算行为，不代表验证了 MAF 的并行调度或真实模型行为。最后的 20 次准入尝试只调用 TryConsume，没有执行服务工具；整个 budget-check 在创建 Agent 之前返回，模型调用次数为 0。普通与流式 [离线循环实验](../../lessons/02-model-round-limit.md) 已由本人提交运行输出验收；宿主终止结果任务于 2026-11-24 搁置。
 
 两种循环检查无需 Magpie，在构建成功后运行：
 

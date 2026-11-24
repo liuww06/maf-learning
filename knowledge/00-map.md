@@ -8,7 +8,7 @@ L01 复盘材料：[指令与实际能力](02-instructions-and-capabilities.md)�
 
 L02 复盘材料：[工具结果与最终回答](03-tool-results-and-answers.md)，区分工具执行、业务结果和回答忠实度。
 
-L02 已验收 [工具执行预算](../lessons/02-tool-budget.md) 与 [模型调用循环上限](../lessons/02-model-round-limit.md) 的普通、流式实验及 FinishReason 对照。[通用请求观测包装层](../lessons/02-run-observation.md) 已实现并完成阶段验证，包装位置失败实验按本人决定跳过；下一步定义宿主终止结果。配套卡片为 [预算作用域、计数位置与终止](04-budgets-and-termination.md)。
+L02 已验收 [工具执行预算](../lessons/02-tool-budget.md) 与 [模型调用循环上限](../lessons/02-model-round-limit.md) 的普通、流式实验及 FinishReason 对照。[通用请求观测包装层](../lessons/02-run-observation.md) 已实现并完成阶段验证，包装位置失败实验按本人决定跳过；宿主终止结果任务于 2026-11-24 搁置，第 2 课收口，见 [评审记录](../progress/2026-11-24-curriculum-review.md)。配套卡片为 [预算作用域、计数位置与终止](04-budgets-and-termination.md)。
 
 真实讨论中的疑问、认识变化与复习自测另见 [个人思考与知识内化](../reflections/README.md)。首篇围绕 [工具预算是否必要](../reflections/001-tool-call-budget.md) 展开，与本页的机制卡片互相补充。
 
