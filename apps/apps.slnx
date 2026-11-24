@@ -1,3 +1,5 @@
 <Solution>
   <Project Path="FirstAgent/FirstAgent.csproj" />
+  <Project Path="HarnessLab/HarnessLab.csproj" />
+  <Project Path="../framework/MiniHarness/MiniHarness.csproj" />
 </Solution>
